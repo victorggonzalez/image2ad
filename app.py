@@ -100,47 +100,49 @@ def main():
     """
     Main function to run the Streamlit app.
     """
-    st.header("Upload a product and get an ad post")
+    st.set_page_config(page_title="Image to Ad Generator", layout="wide")
 
-    upload_file = st.file_uploader("Choose an image:", type=["jpg", "png"])
-    condition_input = st.selectbox(
-        "Condition",
-        ("New", "Used - Like New", "Used - Good", "Used - Acceptable")
-    )
-    price_input = st.number_input("Price", value=5.5, step=0.5)
-    additional_details_input = st.text_area(label="Additional details")
-    pickup_location_input = st.text_input("Pickup location")
+    st.title("📸 Image to Ad Generator")
+    st.write(
+        "Upload a product image and generate a Facebook Marketplace ad in seconds!")
 
-    if upload_file is not None:
-        try:
-            st.image(
-                upload_file,
-                caption="Uploaded Image",
-                use_container_width=False,
-                width=250
-            )
-        except Exception as e:
-            st.error(f"Error displaying the image: {e}")
-    submit_button = st.button("Submit")
+    # Layout with columns
+    col1, col2 = st.columns(2)
 
-    if submit_button and upload_file is None:
-        st.warning("Please upload an image file.")
+    with col1:
+        upload_file = st.file_uploader("Upload an image:", type=["jpg", "png"])
+        condition_input = st.selectbox(
+            "Condition",
+            ("New", "Used - Like New", "Used - Good", "Used - Acceptable")
+        )
+        price_input = st.number_input("Price (CHF)", value=5.5, step=0.5)
+        pickup_location_input = st.text_input(
+            "Pickup location", placeholder="e.g., Zurich")
+        additional_details_input = st.text_area(
+            "Describe your product", placeholder="e.g., Brand new, never used...")
 
-    if submit_button and upload_file is not None and condition_input and price_input:
-        with st.spinner("Generating ad post..."):
-            response = image_to_ad(
-                upload_file, condition_input, price_input, additional_details_input, pickup_location_input)
-            st.success("Ad generated successfully!")
-            st.write(response['ad_title'])
-            st.write(response['ad_text'])
-            tag_list = response['tag_list']
-            if isinstance(tag_list, str):
-                tag_list = tag_list.split(",")
-            st.write("Tags:")
-            for tag in tag_list:
-                st.write(f"- {tag.strip()}")
+    submit_button = st.button("🚀 Generate Ad")
+
+    if submit_button:
+        if not upload_file:
+            st.warning("Please upload an image file.")
+        elif not pickup_location_input:
+            st.warning("Please provide a pickup location.")
+        else:
+            with col2:
+                with st.spinner("Generating ad post..."):
+                    response = image_to_ad(
+                        upload_file, condition_input, price_input, additional_details_input, pickup_location_input)
+                    st.success("Ad generated successfully!")
+                    with col2:
+                        with st.expander("Ad Preview", expanded=True):
+                            st.markdown(f"### {response['ad_title']}")
+                            st.write(response['ad_text'])
+                            st.write("**Tags:**")
+                            st.write(", ".join(response['tag_list']))
+                            st.image(
+                                upload_file, use_container_width=False, width=250)
 
 
-# Invoking main function
 if __name__ == "__main__":
     main()
