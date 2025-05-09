@@ -1,6 +1,6 @@
 """
 Image to Ad
-This is a simple app that takes an image of food and generates a recipe
+This is a simple app that takes an image of a product and generates a Facebook Marketplace ad post.
 
 """
 import os
