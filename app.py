@@ -95,8 +95,7 @@ def main():
     """
     Main function to run the Streamlit app.
     """
-    st.title("Image To Add")
-    st.header("Upload an image and get a recipe")
+    st.header("Upload a product and get an ad post")
 
     upload_file = st.file_uploader("Choose an image:", type=["jpg", "png"])
     condition_input = st.selectbox(
@@ -107,6 +106,8 @@ def main():
     additional_details_input = st.text_area(label="Additional details")
 
     if upload_file is not None:
+        st.write(f"Uploaded file name: {upload_file.name}")
+        st.write(f"Uploaded file type: {upload_file.type}")
         try:
             st.image(
                 upload_file,
