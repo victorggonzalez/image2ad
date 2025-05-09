@@ -43,17 +43,19 @@ class ImageInformation(BaseModel):
     tag_list: list[str] = Field(
         description="a list of tags related to the image")
 
+
 parser = JsonOutputParser(pydantic_object=ImageInformation)
 
+
 def image_to_ad(upload_file, condition_input: str,
-                           price: float, additional_details: str) -> dict:
+                price: float, additional_details: str, pickup_location_input: str) -> dict:
     """Get image information from the model."""
     vision_prompt_template = """
     You will be provided with an image of a product I want to sell.
     Your task is to create a Facebook Marketplace post for this product.
     You will generate:
     - A title: should be short and catchy.
-    - A message: should provide a description of the product, including its condition, price, and any additional details. Finish the message with: "Pick-up in Renens VD, near Malley metro station. Message me if interested."
+    - A post: should provide a description of the product, including its condition, price, and any additional details."
     - A list of tags: should be relevant to the product and help improve visibility.
     Additional considerations:
     - The condition of the product is: {condition_input}
@@ -61,12 +63,14 @@ def image_to_ad(upload_file, condition_input: str,
     - Additional details: {additional_details}
     
     ## Writing requirements
-    - Keep the description short and to the point. No need for long paragraphs or extra "marketing" campaigns.
+    - Keep the post short and to the point. No need for long paragraphs or extra "marketing" campaigns.
+    - Finish the message with: "Pick-up in {pickup_location_input}. Message me if interested."
     """
     vision_prompt = vision_prompt_template.format(
         condition_input=condition_input,
         price=price,
-        additional_details=additional_details
+        additional_details=additional_details,
+        pickup_location_input=pickup_location_input
     )
     byte_array = bytearray(upload_file.read())
     image_base64 = base64.b64encode(byte_array).decode("utf-8")
@@ -91,6 +95,7 @@ def image_model(inputs: dict) -> str | list[str] | dict:
     )
     return msg.content
 
+
 def main():
     """
     Main function to run the Streamlit app.
@@ -102,40 +107,38 @@ def main():
         "Condition",
         ("New", "Used - Like New", "Used - Good", "Used - Acceptable")
     )
-    price_input = st.number_input("Prop Line", value=5.5, step=0.5)
+    price_input = st.number_input("Price", value=5.5, step=0.5)
     additional_details_input = st.text_area(label="Additional details")
+    pickup_location_input = st.text_input("Pickup location")
 
     if upload_file is not None:
-        st.write(f"Uploaded file name: {upload_file.name}")
-        st.write(f"Uploaded file type: {upload_file.type}")
         try:
             st.image(
                 upload_file,
-                caption="The uploaded image",
+                caption="Uploaded Image",
                 use_container_width=False,
                 width=250
             )
         except Exception as e:
             st.error(f"Error displaying the image: {e}")
-    else:
-        st.warning("Please upload an image file.")
     submit_button = st.button("Submit")
 
-    if upload_file is not None and condition_input and price_input:
-        if submit_button:
-            with st.spinner("Generating ad post..."):
-                response = image_to_ad(
-                    upload_file, condition_input, price_input, additional_details_input)
-                st.balloons()
-                st.success("Ad generated successfully!")
-                st.write(response['ad_title'])
-                st.write(response['ad_text'])
-                tag_list = response['tag_list']
-                if isinstance(tag_list, str):
-                    tag_list = tag_list.split(",")
-                st.write("Tags:")
-                for tag in tag_list:
-                    st.write(f"- {tag.strip()}")
+    if submit_button and upload_file is None:
+        st.warning("Please upload an image file.")
+
+    if submit_button and upload_file is not None and condition_input and price_input:
+        with st.spinner("Generating ad post..."):
+            response = image_to_ad(
+                upload_file, condition_input, price_input, additional_details_input, pickup_location_input)
+            st.success("Ad generated successfully!")
+            st.write(response['ad_title'])
+            st.write(response['ad_text'])
+            tag_list = response['tag_list']
+            if isinstance(tag_list, str):
+                tag_list = tag_list.split(",")
+            st.write("Tags:")
+            for tag in tag_list:
+                st.write(f"- {tag.strip()}")
 
 
 # Invoking main function
